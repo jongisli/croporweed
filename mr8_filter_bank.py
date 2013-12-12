@@ -1,4 +1,6 @@
 #!/usr/bin/python
+import numpy as np
+
 from scipy.ndimage import gaussian_filter
 from scipy.ndimage import gaussian_laplace
 from scipy.ndimage import gaussian_filter1d
@@ -22,22 +24,22 @@ def generate_filters():
     # Edge filters (first order Gaussian derivative)
     for scale in scales:
         max_edge_filter = \
-          lambda I: max_anisotropic_derivative_filter(I, scale, angles, 1)
+          lambda I: max_anisotropic_derivative_filter1(I, scale, angles)
         filters.append(max_edge_filter)
         
     # Bar filters (second order Gaussian derivative)
     for scale in scales:
         max_bar_filter = \
-          lambda I: max_anisotropic_derivative_filter(I, scale, angles, 2)
+          lambda I: max_anisotropic_derivative_filter2(I, scale, angles)
         filters.append(max_bar_filter)
 
     return filters
 
 
-def max_anisotropic_derivative_filter(I, scale, angles, order):
+def max_anisotropic_derivative_filter1(I, scale, angles):
     sigma_x, sigma_y = scale
-    F_x = gaussian_filter1d(I, sigma_x, axis=-1, order=order)
-    F_y = gaussian_filter1d(I, sigma_y, axis=0, order=order)
+    F_x = gaussian_filter1d(I, sigma_x, axis=-1, order=1)
+    F_y = gaussian_filter1d(I, sigma_y, axis=0, order=1)
 
     responses = []
     for angle in angles:
@@ -46,6 +48,30 @@ def max_anisotropic_derivative_filter(I, scale, angles, order):
 
     aggr_responses = np.dstack(responses)
     return np.max(aggr_responses, axis=2)
+
+
+def max_anisotropic_derivative_filter2(I, scale, angles):
+    sigma_x, sigma_y = scale
+    F_xx = gaussian_filter1d(I, sigma_x, axis=-1, order=2)
+    F_yy = gaussian_filter1d(I, sigma_y, axis=0, order=2)
+
+    F_x = gaussian_filter1d(I, sigma_x, axis=-1, order=1)
+    F_xy = gaussian_filter1d(F_x, sigma_y, axis=0, order=1)
+
+    responses = []
+    for angle in angles:
+        response_x = cos(angle)**2 * F_xx
+        response_xy =  2*cos(angle) * sin(angle) * F_xy
+        response_y = sin(angle)**2 * F_yy
+        responses.append(response_x + response_xy + response_y)
+
+    aggr_responses = np.dstack(responses)
+    return np.max(aggr_responses, axis=2)
+
+
+def apply_filter_bank(I, filter_bank):
+    responses = [f(I) for f in filter_bank]
+    return np.dstack(responses)
 
 
 if __name__ == "__main__":
