@@ -3,7 +3,10 @@ import numpy as np
 
 from scipy.ndimage import gaussian_filter
 from scipy.ndimage import gaussian_laplace
-from scipy.ndimage import gaussian_filter1d
+from scipy.ndimage import convolve
+
+from scipy.ndimage.interpolation import rotate
+
 from math import cos, sin, pi
 
 
@@ -11,7 +14,7 @@ def generate_filters():
     filters = []
     # scales and angles for edge and bar filters
     scales = [(1,3), (2,6), (4,12)]
-    angles = [pi/6, pi/3, pi/2, 2*pi/3, 5*pi/6]
+    angles = [0, 30, 60, 90, 120, 150]
     
     # Gaussian filter
     gauss_filter = lambda I: gaussian_filter(I, 10)
@@ -23,47 +26,29 @@ def generate_filters():
     
     # Edge filters (first order Gaussian derivative)
     for scale in scales:
-        max_edge_filter = \
-          lambda I: max_anisotropic_derivative_filter1(I, scale, angles)
-        filters.append(max_edge_filter)
+        filters.append(
+          lambda I, scale=scale: \
+          max_anisotropic_derivative_filter(I, scale, angles, 1))
         
     # Bar filters (second order Gaussian derivative)
     for scale in scales:
-        max_bar_filter = \
-          lambda I: max_anisotropic_derivative_filter2(I, scale, angles)
-        filters.append(max_bar_filter)
+        filters.append(
+          lambda I, scale=scale: \
+          max_anisotropic_derivative_filter(I, scale, angles, 2))
 
     return filters
 
 
-def max_anisotropic_derivative_filter1(I, scale, angles):
-    sigma_x, sigma_y = scale
-    F_x = gaussian_filter1d(I, sigma_x, axis=-1, order=1)
-    F_y = gaussian_filter1d(I, sigma_y, axis=0, order=1)
+def max_anisotropic_derivative_filter(I, scale, angles, order):
+    impulse = np.zeros((101,101))
+    impulse[50][50] = 1
+    gaussian_mask = gaussian_filter(impulse, scale, order=[order,0])
 
     responses = []
     for angle in angles:
-        response = cos(angle) * F_x + sin(angle) * F_y
+        rotated_mask = rotate(gaussian_mask, angle, reshape=False)
+        response = convolve(I, rotated_mask)
         responses.append(response)
-
-    aggr_responses = np.dstack(responses)
-    return np.max(aggr_responses, axis=2)
-
-
-def max_anisotropic_derivative_filter2(I, scale, angles):
-    sigma_x, sigma_y = scale
-    F_xx = gaussian_filter1d(I, sigma_x, axis=-1, order=2)
-    F_yy = gaussian_filter1d(I, sigma_y, axis=0, order=2)
-
-    F_x = gaussian_filter1d(I, sigma_x, axis=-1, order=1)
-    F_xy = gaussian_filter1d(F_x, sigma_y, axis=0, order=1)
-
-    responses = []
-    for angle in angles:
-        response_x = cos(angle)**2 * F_xx
-        response_xy =  2*cos(angle) * sin(angle) * F_xy
-        response_y = sin(angle)**2 * F_yy
-        responses.append(response_x + response_xy + response_y)
 
     aggr_responses = np.dstack(responses)
     return np.max(aggr_responses, axis=2)
