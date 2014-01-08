@@ -10,18 +10,33 @@ from scipy.ndimage.interpolation import rotate
 from math import cos, sin, pi
 
 
-def generate_filters():
+"""
+
+Parameters
+----------
+sigma: scalar
+The scale of the Gaussian and the Laplacian of Gaussian filters.
+scales: list of tuples
+The scales of the anisotropic gaussian derivative filters.
+angles: list of scalars
+The angles of the anisotropic gaussian derivative filters.
+
+Returns
+----------
+filters: list of functions
+A list of functions which are the filters. These functions
+take a single image as parameter and return a filter response.
+
+"""
+def generate_filters(sigma, scales, angles):
     filters = []
-    # scales and angles for edge and bar filters
-    scales = [(1,3), (2,6), (4,12)]
-    angles = [0, 30, 60, 90, 120, 150]
     
     # Gaussian filter
-    gauss_filter = lambda I: gaussian_filter(I, 10)
+    gauss_filter = lambda I: gaussian_filter(I, sigma)
     filters.append(gauss_filter)
     
     # Laplacian of Gaussian filter
-    laplacian_filter = lambda I: gaussian_laplace(I, 10)
+    laplacian_filter = lambda I: gaussian_laplace(I, sigma)
     filters.append(laplacian_filter)
     
     # Edge filters (first order Gaussian derivative)
@@ -47,7 +62,7 @@ def max_anisotropic_derivative_filter(I, scale, angles, order):
     responses = []
     for angle in angles:
         rotated_mask = rotate(gaussian_mask, angle, reshape=False)
-        response = convolve(I, rotated_mask)
+        response = convolve(I, rotated_mask) #TODO: + 180?
         responses.append(response)
 
     aggr_responses = np.dstack(responses)
