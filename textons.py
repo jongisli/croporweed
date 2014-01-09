@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from scipy.cluster.vq import kmeans, whiten
+    
 
 
 

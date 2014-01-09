@@ -1,12 +1,12 @@
 #!/usr/bin/python
+import glob
 import numpy as np
 
 from scipy.ndimage import gaussian_filter
 from scipy.ndimage import gaussian_laplace
 from scipy.ndimage import convolve
-
+from scipy.ndimage import imread
 from scipy.ndimage.interpolation import rotate
-
 from math import cos, sin, pi
 
 
@@ -72,6 +72,16 @@ def max_anisotropic_derivative_filter(I, scale, angles, order):
 def apply_filter_bank(I, filter_bank):
     responses = [f(I) for f in filter_bank]
     return np.dstack(responses)
+
+
+def generate_filter_responses(images_path,  dimensions, filter_bank, output_folder):
+    image_files = glob.glob(images_path)
+    rows,cols,n = dimensions
+    for image_file in image_files:
+        image = imread(image_file, flatten=True)
+        filter_response = apply_filter_bank(image, filter_bank)
+        pixel_responses = filter_response.reshape(rows * cols, n)
+        np.savetxt(output_folder + image.split("/")[-1] + ".txt", pixel_responses)
 
 
 if __name__ == "__main__":
