@@ -10,25 +10,25 @@ from scipy.ndimage.interpolation import rotate
 from math import cos, sin, pi
 
 
-"""
-
-Parameters
-----------
-sigma: scalar
-The scale of the Gaussian and the Laplacian of Gaussian filters.
-scales: list of tuples
-The scales of the anisotropic gaussian derivative filters.
-angles: list of scalars
-The angles of the anisotropic gaussian derivative filters.
-
-Returns
-----------
-filters: list of functions
-A list of functions which are the filters. These functions
-take a single image as parameter and return a filter response.
-
-"""
 def generate_filters(sigma, scales, angles):
+    """
+
+    Parameters
+    ----------
+    sigma: scalar
+    The scale of the Gaussian and the Laplacian of Gaussian filters.
+    scales: list of tuples
+    The scales of the anisotropic gaussian derivative filters.
+    angles: list of scalars
+    The angles of the anisotropic gaussian derivative filters.
+    
+    Returns
+    ----------
+    filters: list of functions
+    A list of functions which are the filters. These functions
+    take a single image as parameter and return a filter response.
+    
+    """
     filters = []
     
     # Gaussian filter
